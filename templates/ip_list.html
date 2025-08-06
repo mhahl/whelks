@@ -1,0 +1,43 @@
+{% extends 'base.html' %}
+
+  {% block content %}
+<h1 class="ui header">
+  <i class="sitemap alternate icon"></i>
+  <div class="content">
+    IP Addresses
+    <div class="sub header">List of unique IPs interacting with the honeypot</div>
+  </div>
+</h1>
+
+<div class="ui fluid icon input" style="margin-top: 2em;">
+  <input type="text" id="ip-search" placeholder="Search ...">
+  <i class="search icon"></i>
+</div>
+
+<table class="ui celled compact table" style="margin-top: 1em;">
+  <thead>
+    <tr>
+      <th>IP Address</th>
+      <th>Last Seen</th>
+      <th class="">Details</th>
+    </tr>
+  </thead>
+  <tbody>
+    {% for ip in ips %}
+
+    <tr>
+      <td>
+        <a href="/ip/{{ip}}"><strong>{{ip}}</strong></a>
+      </td>
+      <td>
+        {{get_last_updated_for_ip(ip)}}
+      </td>
+      <td class="">
+        <a href="/ip/{{ip}}" class="ui tiny basic button">View</a>
+      </td>
+    </tr>
+    {% endfor %}
+  </tbody>
+</table>
+{% endblock %}
+

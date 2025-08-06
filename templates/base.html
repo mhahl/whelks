@@ -1,0 +1,97 @@
+<!DOCTYPE html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Oh hai, Mark</title>
+
+    <script src="
+    https://cdn.jsdelivr.net/npm/asciinema-player@3.10.0/dist/bundle/asciinema-player.min.js
+    "></script>
+    <link href="
+      https://cdn.jsdelivr.net/npm/asciinema-player@3.10.0/dist/bundle/asciinema-player.min.css
+      " rel="stylesheet">
+
+    <script src="https://cdn.jsdelivr.net/npm/htmx.org@2.0.6/dist/htmx.min.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/jquery@3.7.1/dist/jquery.min.js"></script>
+    <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/fomantic-ui@2.9.4/dist/semantic.min.css">
+    <script src="https://cdn.jsdelivr.net/npm/fomantic-ui@2.9.4/dist/semantic.min.js"></script>
+
+    <style>
+    /* Make the grid take the full height of the viewport */
+    body, html, .ui.grid {
+    height: 100%;
+    }
+    body, html {
+    background-color: #f4f5f6;
+    }
+    /* Remove default grid margins for a full-screen layout */
+    .ui.grid {
+    margin: 0;
+    }
+    /* Ensure the menu column has no padding */
+    .ui.grid > .column.sidebar-column {
+    padding: 0;
+    }
+    </style>
+  </head>
+  <body>
+
+    <div class="ui grid">
+
+      <div class="three wide column sidebar-column">
+
+        <div class="ui vertical inverted fluid menu" style="height: 100%; border-radius: 0;">
+          <div class="item">
+            <img class="ui mini image" src="/static/logo.svg">
+          </div>
+          <div class="item">
+            <div class="header">Data</div>
+            <div class="menu">
+              <a class="item" href="/">
+                <i class="server icon"></i>
+                IP Addresses
+              </a>
+              <a class="item"> <i class="download icon"></i>
+                Downloads
+              </a>
+            </div>
+          </div>
+
+          <div class="item">
+            <div class="header">Investigate</div>
+            <div class="menu">
+              <a class="item" href='https://observe.sigaint.au'>
+                <i class="layer group icon"></i>
+                Victoria Logs
+              </a>
+              <a class="item" href="https://grafana.sigaint.au">
+                <i class="file contract icon"></i>
+                Victoria Metrics
+              </a>
+              <a class="item" href="https://10.120.13.194:9090/machines">
+                <i class="cloud icon"></i>
+                VM Pools
+              </a>
+            </div>
+          </div>
+
+          <a class="item">
+            <i class="sign-out alternate icon"></i>
+            Logout
+          </a>
+        </div>
+
+      </div>
+
+      <div class="thirteen wide column">
+
+        <div style="padding: 2em;">
+          {% block content %}{% endblock %}
+        </div>
+
+      </div>
+
+    </div>
+  </body>
+</html>

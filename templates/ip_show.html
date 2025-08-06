@@ -1,0 +1,187 @@
+{% extends 'base.html' %}
+  {% block content %}
+
+  {% set g = geocoder.ip(ip) %}
+
+
+<style>
+.nmap-output {
+background-color: #1e1e1e;
+color: #d4d4d4;
+padding: 1.5em;
+border-radius: 5px;
+font-family: 'Courier New', Courier, monospace;
+font-size: 0.9em;
+white-space: pre-wrap; /* Wrap long lines */
+word-break: break-all;
+max-height: 400px;
+overflow-y: auto;
+border: 1px solid #333;
+}
+</style>
+
+<!-- Breadcrumb Navigation -->
+<div class="ui breadcrumb">
+  <a class="section" href="/">List of IPs</a>
+  <i class="right angle icon divider"></i>
+  <div class="active section">{{ip}}</div>
+</div>
+
+<!-- IP Address Details Card -->
+<div class="ui segment" style="margin-top: 1em;">
+  <h2 class="ui header">
+    <i class="sitemap icon"></i>
+    <div class="content">
+      {{ip}}
+      <div class="sub header">Details for this specific IP address.</div>
+    </div>
+  </h2>
+  <div class="ui list">
+    <div class="item">
+      <i class="globe icon"></i>
+      <div class="content">
+        <strong>City:</strong> 
+        <img src="https://flagcdn.com/w20/{{g.country | lower}}.png" class="flag-icon"> {{g.city | capitalize}}
+      </div>
+    </div>
+    <div class="item">
+      <i class="building icon"></i>
+      <div class="content"><strong>ASN:</strong> AS133655 FPT Telecom Company</div>
+    </div>
+  </div>
+</div>
+
+
+<!-- NMAP Scan Output -->
+<h3 class="ui header">Nmap Scan Output</h3>
+<div class="nmap-output">
+  <pre>{{scan.decode() | trim}}</pre>
+</div>
+
+
+<div class="ui top attached tabular menu">
+  <a class="active item" data-tab="sessions"> <i class="history icon"></i> Sessions</a>
+  <a class="item" data-tab="files"> <i class="download icon"></i> Files</a>
+  <a class="item" data-tab="credentials"><i class="lock icon"></i> Credentials</a>
+</div>
+<div class="ui bottom attached active tab segment" data-tab="sessions">
+
+
+  {% for session in sessions %}
+
+
+  <div class="ui fluid active accordion">
+    <div class="title">
+      <i class="dropdown icon"></i>
+      Session {{session}} 
+    </div>
+    <div class="content">
+
+      <div class="ui grid">
+        <div class="eight wide column">
+          <h3>Commands</h3>
+          <div class="ui inverted segment" style="height: 90%">
+            <div class="ui list">
+              {% set commands = get_commands_for_session(ip, session) %}
+              {% if not commands %}
+              <p>Nohting to show</p>
+              {%endif%}
+              {% for command in commands %}
+              <div class="item">
+                {{command.decode() | trim}}
+              </div>
+              {%endfor%}
+            </div>
+          </div>
+        </div>
+        <div class="eight wide column">
+          <h3>Playback</h3>
+          <div id="player-{{get_log_for_ip_session(ip, session)}}" class="player" data-session="{{get_log_for_ip_session(ip, session)}}">
+          </div>
+        </div>
+      </div>
+
+    </div>
+  </div>
+
+  {%endfor%}
+</div>
+<div class="ui bottom attached tab segment" data-tab="files">
+
+
+  <table class="ui celled table">
+    <thead>
+      <tr>
+        <th>Filename</th>
+        <th>Size</th>
+        <th>SHA256 Hash</th>
+        <th>Session ID</th>
+      </tr>
+    </thead>
+    <tbody>
+      <tr>
+        <td>
+          <i class="file code outline icon"></i>
+          payload.sh
+        </td>
+        <td>1.2 KB</td>
+        <td><code>e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855</code></td>
+        <td>1</td>
+      </tr>
+      <!-- Add other downloaded files here -->
+    </tbody>
+  </table>
+
+</div>
+<div class="ui bottom attached tab segment" data-tab="credentials">
+  <table class="ui celled table">
+    <thead>
+      <tr>
+        <th>Username</th>
+        <th>Password</th>
+        <th>Timestamp</th>
+      </tr>
+    </thead>
+    <tbody>
+      {% for credential in get_credentials_for_ip(ip) %}
+        <p>{{credential}}
+      {%endfor%}
+      <tr>
+        <td>root</td>
+        <td><code>123456</code></td>
+        <td>2025-08-05 13:55:15</td>
+      </tr>
+      <tr>
+        <td>root</td>
+        <td><code>password</code></td>
+        <td>2025-08-05 13:55:18</td>
+      </tr>
+      <tr>
+        <td>admin</td>
+        <td><code>admin</code></td>
+        <td>2025-08-05 13:56:02</td>
+      </tr>
+      <tr>
+        <td>root</td>
+        <td><code>root</code></td>
+        <td>2025-08-04 10:21:08</td>
+      </tr>
+    </tbody>
+  </table>
+</div>
+
+<script>
+$(document).ready(function() {
+$('.player').each(function(index, element){
+const session = $(element).data('session');
+console.debug("creating player " + session)
+AsciinemaPlayer.create("/static/tty/" + session + ".rec", document.getElementById('player-' + session));
+});
+$('.ui.accordion').accordion();
+$('.menu .item').tab();
+});
+</script>
+
+
+{% endblock %}
+
