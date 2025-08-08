@@ -1,5 +1,8 @@
 {% extends 'base.html' %}
 
+  <script>
+  </script>
+
   {% block content %}
 <h1 class="ui header">
   <i class="sitemap alternate icon"></i>
@@ -9,28 +12,34 @@
   </div>
 </h1>
 
-<div class="ui fluid icon input" style="margin-top: 2em;">
-  <input type="text" id="ip-search" placeholder="Search ...">
-  <i class="search icon"></i>
-</div>
-
-<table class="ui celled compact table" style="margin-top: 1em;">
+<table id="ipTable" class="ui celled compact table" style="margin-top: 1em;">
   <thead>
     <tr>
       <th>IP Address</th>
       <th>Last Seen</th>
+      <th>Sessions</th>
+      <th>URLs</th>
+      <th>Files</th>
       <th class="">Details</th>
     </tr>
   </thead>
   <tbody>
     {% for ip in ips %}
-
     <tr>
       <td>
         <a href="/ip/{{ip}}"><strong>{{ip}}</strong></a>
       </td>
       <td>
         {{get_last_updated_for_ip(ip)}}
+      </td>
+      <td>
+        {{get_session_count_for_ip(ip)}}
+      </td>
+      <td>
+        {{get_urls_count_for_ip(ip)}}
+      </td>
+      <td>
+        {{get_files_count_for_ip(ip)}}
       </td>
       <td class="">
         <a href="/ip/{{ip}}" class="ui tiny basic button">View</a>
@@ -39,5 +48,10 @@
     {% endfor %}
   </tbody>
 </table>
+<script>
+$( document ).ready(function() {
+    const ipt = new DataTable("#ipTable");
+});
+</script>
 {% endblock %}
 

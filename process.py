@@ -3,6 +3,7 @@ import json
 import subprocess
 import logging
 import os
+import re
 
 # TODO: Get from ENV
 r = redis.Redis(host='127.0.0.1', port=6379, db=0)
@@ -13,6 +14,24 @@ l = logging.getLogger(__name__)
 # Get from ENV
 logging.basicConfig(level=logging.INFO)
 
+def __extract_download_urls(command_string):
+    regex = r"\b(wget|curl)\b.*?((?:https?|ftp)://[^\s'\"]+)"
+    matches = re.findall(regex, command_string, re.IGNORECASE)
+    urls = [match[1] for match in matches]
+    return urls
+
+def update_ip_session_urls(event):
+    """
+    Update with any detected URLs in the input events.
+    """
+    src_ip = event['src_ip']
+    key = f"ip:{src_ip}:session:{event['session']}:urls"
+
+    urls = __extract_download_urls(f"{event['input']}")
+    for url in urls:
+        l.info(f"{key}: {url}")
+        r.sadd(key, url) 
+        
 
 def updated_last_updated(event):
     """
@@ -75,10 +94,9 @@ def handle_command_input(event):
     """
     src_ip = event['src_ip']
     key = f"ip:{src_ip}:session:{event['session']}:commands"
-
-    # Place the timestamp infront of every
-    # command so we can tell when it happened.
     data = f"{event['input']}"
+    
+    update_ip_session_urls(event)
 
     l.info(f"{key}: {data}")
     r.rpush(key, data) 
@@ -96,6 +114,14 @@ def handle_log_closed(event):
 
     r.set(key, recording)
 
+def handle_sftp_file_uploaded(event):
+    src_ip = event['src_ip']
+    key = f"ip:{src_ip}:files"
+    data = f"{event['shasum']}:{event['file']}"
+
+    l.info(f"{key}: {data}")
+    r.sadd(key, data)
+
 
 while True:
     metadata = r.brpop('cowrie')
@@ -111,5 +137,8 @@ while True:
     if event['eventid'] in ('cowrie.command.input'):
         handle_command_input(event)
 
-    if event['eventid'] in ('"cowrie.log.closed"'):
+    if event['eventid'] in ('cowrie.log.closed'):
         handle_log_closed(event)
+
+    if event['eventid'] in ('cowrie.sftp.file_uploaded'):
+        handle_sftp_file_uploaded(event)

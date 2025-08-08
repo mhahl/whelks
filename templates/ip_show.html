@@ -14,7 +14,7 @@ font-family: 'Courier New', Courier, monospace;
 font-size: 0.9em;
 white-space: pre-wrap; /* Wrap long lines */
 word-break: break-all;
-max-height: 400px;
+max-height: 500px;
 overflow-y: auto;
 border: 1px solid #333;
 }
@@ -60,20 +60,29 @@ border: 1px solid #333;
 
 
 <div class="ui top attached tabular menu">
-  <a class="active item" data-tab="sessions"> <i class="history icon"></i> Sessions</a>
-  <a class="item" data-tab="files"> <i class="download icon"></i> Files</a>
+  <a class="active item" data-tab="sessions"> <i class="history icon"></i> Sessions     <div class="ui tiny red label">{{sessions | length}}</div>
+</a>
+  <a class="item" data-tab="files"> <i class="download icon"></i>Files <div class="ui tiny red label">{{get_files_count_for_ip(ip)}}</div></a>
+  <a class="item" data-tab="urls"> <i class="globe icon"></i>URLs <div class="ui tiny red label">{{get_urls_count_for_ip(ip)}}</div></a>
   <a class="item" data-tab="credentials"><i class="lock icon"></i> Credentials</a>
 </div>
 <div class="ui bottom attached active tab segment" data-tab="sessions">
 
+  <!-- Display a message if no sessions -->
+  {% if not sessions %} 
+  <div class="ui placeholder segment">
+    <div class="ui icon header">
+      <i class="history icon"></i>
+      No sessions are listed for this IP.
+    </div>
+  </div>
+  {%endif%}
 
   {% for session in sessions %}
-
-
   <div class="ui fluid active accordion">
     <div class="title">
       <i class="dropdown icon"></i>
-      Session {{session}} 
+  Session {{session}} 
     </div>
     <div class="content">
 
@@ -84,7 +93,7 @@ border: 1px solid #333;
             <div class="ui list">
               {% set commands = get_commands_for_session(ip, session) %}
               {% if not commands %}
-              <p>Nohting to show</p>
+              <p>No inputs.</p>
               {%endif%}
               {% for command in commands %}
               <div class="item">
@@ -96,39 +105,36 @@ border: 1px solid #333;
         </div>
         <div class="eight wide column">
           <h3>Playback</h3>
-          <div id="player-{{get_log_for_ip_session(ip, session)}}" class="player" data-session="{{get_log_for_ip_session(ip, session)}}">
+          <div id="player-{{session}}-{{get_log_for_ip_session(ip, session)}}" class="player" data-session="{{session}}" data-log="{{get_log_for_ip_session(ip, session)}}">
           </div>
         </div>
       </div>
 
     </div>
   </div>
-
   {%endfor%}
+
+  
+
 </div>
 <div class="ui bottom attached tab segment" data-tab="files">
-
-
   <table class="ui celled table">
     <thead>
       <tr>
         <th>Filename</th>
-        <th>Size</th>
         <th>SHA256 Hash</th>
-        <th>Session ID</th>
       </tr>
     </thead>
     <tbody>
+      {% for file in get_files_for_ip(ip) %}
       <tr>
         <td>
           <i class="file code outline icon"></i>
-          payload.sh
+          {{file.decode().split(":")[-1]}}
         </td>
-        <td>1.2 KB</td>
-        <td><code>e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855</code></td>
-        <td>1</td>
+        <td><code>{{file.decode().split(":")[0]}}</code></td>
       </tr>
-      <!-- Add other downloaded files here -->
+      {%endfor%}
     </tbody>
   </table>
 
@@ -139,33 +145,41 @@ border: 1px solid #333;
       <tr>
         <th>Username</th>
         <th>Password</th>
-        <th>Timestamp</th>
       </tr>
     </thead>
     <tbody>
       {% for credential in get_credentials_for_ip(ip) %}
-        <p>{{credential}}
+      {% set data = credential.decode().split(":") %}
+      <tr>
+        <td>{{data[0]}}</td>
+        <td><code>{{data[1]}}</code></td>
+      </tr>
       {%endfor%}
+    </tbody>
+  </table>
+</div>
+
+<div class="ui bottom attached tab segment" data-tab="urls">
+  <table class="ui celled table">
+    <thead>
       <tr>
-        <td>root</td>
-        <td><code>123456</code></td>
-        <td>2025-08-05 13:55:15</td>
+        <th>URL</th>
+        <th>Session</th>
+        <th>Actions</th>
       </tr>
-      <tr>
-        <td>root</td>
-        <td><code>password</code></td>
-        <td>2025-08-05 13:55:18</td>
-      </tr>
-      <tr>
-        <td>admin</td>
-        <td><code>admin</code></td>
-        <td>2025-08-05 13:56:02</td>
-      </tr>
-      <tr>
-        <td>root</td>
-        <td><code>root</code></td>
-        <td>2025-08-04 10:21:08</td>
-      </tr>
+    </thead>
+    <tbody>
+      {% for session in sessions %}
+        {% for url in get_urls_for_ip_session(ip, session) %}
+        <tr>
+          <td>{{url.decode()}}</td>
+          <td><code>{{session}}</code></td>
+        <td>
+          <p>actions</p>
+        </td>
+        </tr>
+        {%endfor%}
+      {%endfor%}
     </tbody>
   </table>
 </div>
@@ -174,8 +188,8 @@ border: 1px solid #333;
 $(document).ready(function() {
 $('.player').each(function(index, element){
 const session = $(element).data('session');
-console.debug("creating player " + session)
-AsciinemaPlayer.create("/static/tty/" + session + ".rec", document.getElementById('player-' + session));
+const log = $(element).data('log');
+AsciinemaPlayer.create("/static/tty/" + log + ".rec", document.getElementById('player-' + session + "-" + log));
 });
 $('.ui.accordion').accordion();
 $('.menu .item').tab();
