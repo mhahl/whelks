@@ -10,6 +10,8 @@ import hashlib
 import requests
 import uuid
 
+from processing import utils
+
 vt_api = os.environ['VIRUSTOTAL_API_KEY']
 vt = client = vt.Client(vt_api)
 vt_tmp_path = "/tmp"
@@ -23,25 +25,6 @@ l = logging.getLogger(__name__)
 # Get from ENV
 logging.basicConfig(level=logging.INFO)
 
-def __extract_download_urls(command_string):
-    regex = r"\b(wget|curl)\b.*?((?:https?|ftp)://[^\s'\"]+)"
-    matches = re.findall(regex, command_string, re.IGNORECASE)
-    urls = [match[1] for match in matches]
-    return urls
-
-
-def _download_file(url, save_path):
-    try:
-        response = requests.get(url, stream=True) # Use stream=True for large files
-        response.raise_for_status() # Raise an exception for bad status codes (4xx or 5xx)
-
-        with open(save_path, 'wb') as file:
-            for chunk in response.iter_content(chunk_size=8192): # Iterate over content in chunks
-                file.write(chunk)
-        l.info(f"file saved for upload {url} -> {save_path}")
-    except requests.exceptions.RequestException as e:
-        l.info(f"error: {e}")
-
 
 def __scan_url(url):
     l.info(f"virustotal: scanning {url}")
@@ -49,7 +32,7 @@ def __scan_url(url):
     ansi_escape = re.compile(r'(\x9B|\x1B\[)[0-?]*[ -/]*[@-~]')
     clean_url = ansi_escape.sub('', url.strip())
     local_path = os.path.join(vt_tmp_path, str(uuid.uuid4()))
-    _download_file(clean_url.strip(), local_path)
+    utils.download_file(clean_url.strip(), local_path)
 
     if not os.path.exists(local_path):
         return (None, None)
@@ -104,15 +87,12 @@ def update_ip_session_urls(event):
     src_ip = event['src_ip']
     key = f"ip:{src_ip}:session:{event['session']}:urls"
 
-    urls = __extract_download_urls(f"{event['input']}")
+    urls = utils.extract_download_urls(f"{event['input']}")
     for url in urls:
         l.info(f"{key}: {url}")
         shasum = update_url_scan(url)
         urlkey = f"{url}:{shasum}"
-        r.sadd(key, urlkey) 
-
-
-        
+        r.sadd(key, urlkey)
 
 def updated_last_updated(event):
     """
@@ -210,7 +190,6 @@ while True:
 
     l.info(f"handling event: {event['eventid']}")
 
-
     if event['eventid'] in ('cowrie.login.success'):
         handle_login_success(event)
 
@@ -221,5 +200,5 @@ while True:
     if event['eventid'] in ('cowrie.log.closed'):
         handle_log_closed(event)
 
-    if event['eventid'] in ('cowrie.sftp.file_uploaded'):
+    if event['eventid'] in ('cowrie.session.file_uploaded'):
         handle_sftp_file_uploaded(event)
