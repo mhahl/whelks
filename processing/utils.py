@@ -2,9 +2,6 @@ import re
 import requests
 import logging
 
-from botocore.exceptions import ClientError
-from botocore.session import get_session
-
 # Logging
 log = logging.getLogger(__name__)
 

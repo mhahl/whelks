@@ -18,6 +18,8 @@ VT_API_KEY = os.getenv('VIRUSTOTAL_API_KEY')
 REDIS_HOST = os.getenv('REDIS_HOST', '127.0.0.1')
 REDIS_PORT = int(os.getenv('REDIS_PORT', 6379))
 REDIS_DB = int(os.getenv('REDIS_DB', 0))
+REDIS_USERNAME = os.getenv('REDIS_USERNAME', 'default')
+REDIS_PASSWORD = os.getenv('REDIS_PASSWORD')
 TEMP_PATH = os.getenv('TEMP_PATH', '/tmp')
 LOG_LEVEL = os.getenv('LOG_LEVEL', 'INFO').upper()
 
@@ -220,7 +222,7 @@ class SensorLogProcessor:
 
     def run(self):
         """Starts the main event processing loop."""
-        logger.info("Starting Cowrie log processor...")
+        logger.info("Starting Sensor log processor...")
         while True:
             try:
                 _, event_data = self.redis.brpop('cowrie')
@@ -248,7 +250,7 @@ def main():
     Main function to initialize clients and start the processor.
     """
     try:
-        redis_client = redis.Redis(host=REDIS_HOST, port=REDIS_PORT, db=REDIS_DB)
+        redis_client = redis.Redis(host=REDIS_HOST, port=REDIS_PORT, db=REDIS_DB, username=REDIS_USERNAME, password=REDIS_PASSWORD)
         vt_client = vt.Client(VT_API_KEY)
 
         processor = SensorLogProcessor(redis_client, vt_client)
