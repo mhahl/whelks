@@ -4,6 +4,15 @@ import subprocess
 import logging
 import os
 import re
+import vt
+import json
+import hashlib
+import requests
+import uuid
+
+vt_api = os.environ['VIRUSTOTAL_API_KEY']
+vt = client = vt.Client(vt_api)
+vt_tmp_path = "/tmp"
 
 # TODO: Get from ENV
 r = redis.Redis(host='127.0.0.1', port=6379, db=0)
@@ -20,6 +29,74 @@ def __extract_download_urls(command_string):
     urls = [match[1] for match in matches]
     return urls
 
+
+def _download_file(url, save_path):
+    try:
+        response = requests.get(url, stream=True) # Use stream=True for large files
+        response.raise_for_status() # Raise an exception for bad status codes (4xx or 5xx)
+
+        with open(save_path, 'wb') as file:
+            for chunk in response.iter_content(chunk_size=8192): # Iterate over content in chunks
+                file.write(chunk)
+        l.info(f"file saved for upload {url} -> {save_path}")
+    except requests.exceptions.RequestException as e:
+        l.info(f"error: {e}")
+
+
+def __scan_url(url):
+    l.info(f"virustotal: scanning {url}")
+
+    ansi_escape = re.compile(r'(\x9B|\x1B\[)[0-?]*[ -/]*[@-~]')
+    clean_url = ansi_escape.sub('', url.strip())
+    local_path = os.path.join(vt_tmp_path, str(uuid.uuid4()))
+    _download_file(clean_url.strip(), local_path)
+
+    if not os.path.exists(local_path):
+        return (None, None)
+
+    analysis = None
+    shasum = None
+
+    with open(local_path,"rb") as f:
+        shasum = hashlib.sha256(f.read()).hexdigest()
+
+    try:
+        with open(local_path, "rb") as f:
+            analysis = client.scan_file(f, wait_for_completion=True)
+    except:
+        l.error("virustotal: error :(")
+
+    os.remove(local_path)
+
+    j =  json.dumps(analysis.to_dict())
+    l.info(f"virustotal: result {j}")
+    return (shasum, j)
+
+def __scan_file(local_path):
+    l.info(f"virustotal: scanning {local_path}")
+
+    analysis = None
+    shasum = None
+    with open(local_path,"rb") as f:
+        bytes = f.read() 
+        shasum = hashlib.sha256(bytes).hexdigest()
+    with open(local_path, "rb") as f:
+        analysis = client.scan_file(f, wait_for_completion=True)
+    j =  json.dumps(analysis.to_dict())
+    l.info(f"virustotal: result {j}")
+    return (shasum, j)
+
+def update_url_scan(url):
+    shasum, data = __scan_url(url)
+    if not shasum :
+        l.info(f"failed scanning {url}")
+        return
+    key = f"file:shasum:{shasum}"
+    l.info(f"{key}: saving scan results for {shasum} {url}")
+    r.set(key, data)
+    return shasum
+
+
 def update_ip_session_urls(event):
     """
     Update with any detected URLs in the input events.
@@ -30,7 +107,11 @@ def update_ip_session_urls(event):
     urls = __extract_download_urls(f"{event['input']}")
     for url in urls:
         l.info(f"{key}: {url}")
-        r.sadd(key, url) 
+        shasum = update_url_scan(url)
+        urlkey = f"{url}:{shasum}"
+        r.sadd(key, urlkey) 
+
+
         
 
 def updated_last_updated(event):

@@ -164,6 +164,7 @@ border: 1px solid #333;
     <thead>
       <tr>
         <th>URL</th>
+        <th>Shasum</th>
         <th>Session</th>
         <th>Actions</th>
       </tr>
@@ -171,11 +172,19 @@ border: 1px solid #333;
     <tbody>
       {% for session in sessions %}
         {% for url in get_urls_for_ip_session(ip, session) %}
+      {% set data = url.decode().rsplit(":", 1) %}
         <tr>
-          <td>{{url.decode()}}</td>
+          <td>{{data[0]}}</td>
+          <td>
+          {% if data[1] %}
+            {{data[1]}}
+          {%else%}
+          <a class="ui red label">Failed</a>
+          {%endif%}
+          </td>
           <td><code>{{session}}</code></td>
         <td>
-          <p>actions</p>
+          <a href="/files/{{data[1]}}/results?filename={{data[0]}}">View</a>
         </td>
         </tr>
         {%endfor%}

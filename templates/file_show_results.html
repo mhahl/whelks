@@ -1,0 +1,79 @@
+{% extends 'base.html' %}
+  {% block content %}
+
+
+<div class="main content">
+
+  <!-- Breadcrumb Navigation -->
+  <div class="ui breadcrumb">
+    <a class="section" href="/">IPs</a>
+    <i class="right angle icon divider"></i>
+    <a class="section" href="/files">{{shasum}}</a>
+    <i class="right angle icon divider"></i>
+    <div class="active section">File Analysis</div>
+  </div>
+
+  <!-- File Summary Card -->
+  <div class="ui segment" style="margin-top: 1em;">
+    <h2 class="ui header">
+      <i class="file code outline icon"></i>
+      <div class="content">
+        {% if filename %}
+        {{filename}}
+        {%else%}
+        {{shasum}}
+        {%endif%}
+        <div class="sub header">VirusTotal analysis report</div>
+      </div>
+      <div class="ui red label detection-label">
+        <i class="bug icon"></i>
+          {{report.attributes.stats.malicious}} Detections
+      </div>
+    </h2>
+    <div class="ui list">
+      <div class="item">
+        <div class="content">
+          <strong>SHA256:</strong> 
+          <code class="shasum">shasum</code>
+        </div>
+      </div>
+      <div class="item">
+        <div class="content"><strong>File Size:</strong> 1.2 KB</div>
+      </div>
+      <div class="item">
+        <div class="content"><strong>File Type:</strong> Bourne-Again shell script, ASCII text executable</div>
+      </div>
+    </div>
+  </div>
+
+<!-- Detections Table -->
+<h3 class="ui header">Antivirus Detections</h3>
+<table id="resultTable" class="ui celled table">
+    <thead>
+        <tr>
+            <th>Antivirus Vendor</th>
+            <th>Engine Version</th>
+            <th>Result</th>
+        </tr>
+    </thead>
+    <tbody>
+        {%- for engine, results in report.attributes.results.items() -%}
+        {%- if results.result -%}
+        <tr>
+            <td>{{engine}}</td>
+            <td>{{results.engine_version}}</td>
+            <td>{{results.result}}</td>
+        </tr>
+        {%endif%}
+        {%endfor%}
+    </tbody>
+</table>
+
+<script>
+  $(document).ready(function(){
+    const resultTable = DataTable("#resultTable")
+  });
+</script>
+
+{% endblock %}
+
