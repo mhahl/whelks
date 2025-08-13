@@ -27,7 +27,7 @@
     {% for summary in ip_summaries %}
     <tr>
       <td>
-        <a href="/ip/{{ip}}"><strong>{{ip}}</strong></a>
+        <a href="/ip/{{summary.ip}}"><strong>{{summary.ip}}</strong></a>
       </td>
       <td>
         {{summary.last_updated}}
@@ -42,7 +42,7 @@
         {{summary.files_count}}
       </td>
       <td class="">
-        <a href="/ip/{{ip}}" class="ui tiny basic button">View</a>
+        <a href="/ip/{{summary.ip}}" class="ui tiny basic button">View</a>
       </td>
     </tr>
     {% endfor %}
@@ -50,7 +50,9 @@
 </table>
 <script>
 $( document ).ready(function() {
-    const ipt = new DataTable("#ipTable");
+  const ipt = new DataTable("#ipTable",{
+    order: [[2, 'desc']]
+  });
 });
 </script>
 {% endblock %}

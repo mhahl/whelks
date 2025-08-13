@@ -12,6 +12,7 @@ def extract_download_urls(command_string):
     regex = r"\b(wget|curl)\b.*?((?:https?|ftp)://[^\s'\"]+)"
     matches = re.findall(regex, command_string, re.IGNORECASE)
     urls = [match[1] for match in matches]
+    log.debug(urls)
     return urls
 
 def download_file(url, save_path):

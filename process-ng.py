@@ -149,7 +149,7 @@ class SensorLogProcessor:
         if urls:
             url_key = f"ip:{src_ip}:session:{session}:urls"
             for url in urls:
-                shasum = self._update_url_scan(url)
+                shasum = self.update_url_scan(url)
                 if shasum:
                     self.redis.sadd(url_key, f"{url}:{shasum}")
 
@@ -158,22 +158,8 @@ class SensorLogProcessor:
         src_ip, session, tty_hash = event['src_ip'], event['session'], event['shasum']
         key = f"ip:{src_ip}:session:{session}:log"
         logger.info(f"Processing TTY log for session {session} (SHA: {tty_hash})")
+        self.redis.set(key, tty_hash)
 
-        # Use subprocess.run for better control and security vs os.system
-        # Assumes the script exists and is executable.
-        try:
-            source_path = f"static/tty/{tty_hash}"
-            dest_path = f"static/tty/{tty_hash}.rec"
-            subprocess.run(
-                ["python", "scripts/asciinema.py", "-o", dest_path, source_path],
-                check=True, capture_output=True, text=True
-            )
-            self.redis.set(key, tty_hash)
-            logger.info(f"Successfully converted TTY log: {tty_hash}")
-        except FileNotFoundError:
-            logger.error("asciinema.py script not found.")
-        except subprocess.CalledProcessError as e:
-            logger.error(f"Failed to convert TTY log {tty_hash}: {e.stderr}")
 
     def handle_file_upload(self, event: Dict[str, Any]):
         """Handles cowrie.session.file_upload events."""

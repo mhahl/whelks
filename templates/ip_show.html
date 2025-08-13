@@ -1,8 +1,6 @@
 {% extends 'base.html' %}
   {% block content %}
 
-  {% set g = geocoder.ip(ip) %}
-
 
 <style>
 .nmap-output {
@@ -24,7 +22,7 @@ border: 1px solid #333;
 <div class="ui breadcrumb">
   <a class="section" href="/">List of IPs</a>
   <i class="right angle icon divider"></i>
-  <div class="active section">{{ip}}</div>
+  <div class="active section">{{details.ip}}</div>
 </div>
 
 <!-- IP Address Details Card -->
@@ -41,7 +39,7 @@ border: 1px solid #333;
       <i class="globe icon"></i>
       <div class="content">
         <strong>City:</strong> 
-        <img src="https://flagcdn.com/w20/{{g.country | lower}}.png" class="flag-icon"> {{g.city | capitalize}}
+        <img src="https://flagcdn.com/w20/{{details.location.country | lower}}.png" class="flag-icon"> {{details.location.city | capitalize}}
       </div>
     </div>
     <div class="item">
@@ -55,21 +53,21 @@ border: 1px solid #333;
 <!-- NMAP Scan Output -->
 <h3 class="ui header">Nmap Scan Output</h3>
 <div class="nmap-output">
-  <pre>{{scan.decode() | trim}}</pre>
+  <pre>{{details.scan | trim}}</pre>
 </div>
 
 
 <div class="ui top attached tabular menu">
-  <a class="active item" data-tab="sessions"> <i class="history icon"></i> Sessions     <div class="ui tiny red label">{{sessions | length}}</div>
+  <a class="active item" data-tab="sessions"> <i class="history icon"></i> Sessions     <div class="ui tiny red label">{{details.sessions | length}}</div>
 </a>
-  <a class="item" data-tab="files"> <i class="download icon"></i>Files <div class="ui tiny red label">{{get_files_count_for_ip(ip)}}</div></a>
-  <a class="item" data-tab="urls"> <i class="globe icon"></i>URLs <div class="ui tiny red label">{{get_urls_count_for_ip(ip)}}</div></a>
-  <a class="item" data-tab="credentials"><i class="lock icon"></i> Credentials</a>
+  <a class="item" data-tab="files"> <i class="download icon"></i>Files <div class="ui tiny red label">{{details.files | length}}</div></a>
+  <a class="item" data-tab="urls"> <i class="globe icon"></i>URLs <div class="ui tiny red label">{{details.url_count}}</div></a>
+  <a class="item" data-tab="credentials"><i class="lock icon"></i> Credentials <div class="ui tiny red label">{{details.credentials | length}}</div></a>
 </div>
 <div class="ui bottom attached active tab segment" data-tab="sessions">
 
   <!-- Display a message if no sessions -->
-  {% if not sessions %} 
+  {% if not details.sessions %} 
   <div class="ui placeholder segment">
     <div class="ui icon header">
       <i class="history icon"></i>
@@ -78,7 +76,7 @@ border: 1px solid #333;
   </div>
   {%endif%}
 
-  {% for session in details %}
+  {% for session in details.sessions %}
   <div class="ui fluid active accordion">
     <div class="title">
       <i class="dropdown icon"></i>
@@ -91,12 +89,9 @@ border: 1px solid #333;
           <h3>Commands</h3>
           <div class="ui inverted segment" style="height: 90%">
             <div class="ui list">
-              {% if not session.commands %}
-              <p>No inputs.</p>
-              {%endif%}
               {% for command in session.commands %}
               <div class="item">
-                {{command.decode() | trim}}
+                {{command | trim}}
               </div>
               {%endfor%}
             </div>
@@ -129,9 +124,9 @@ border: 1px solid #333;
       <tr>
         <td>
           <i class="file code outline icon"></i>
-          {{file.decode().split(":")[-1]}}
+          {{file.split(":")[-1]}}
         </td>
-        <td><code>{{file.decode().split(":")[0]}}</code></td>
+        <td><code>{{file.split(":")[0]}}</code></td>
       </tr>
       {%endfor%}
     </tbody>
@@ -148,7 +143,7 @@ border: 1px solid #333;
     </thead>
     <tbody>
       {% for credential in details.credentials %}
-      {% set data = credential.decode().split(":") %}
+      {% set data = credential.split(":") %}
       <tr>
         <td>{{data[0]}}</td>
         <td><code>{{data[1]}}</code></td>
@@ -171,7 +166,7 @@ border: 1px solid #333;
     <tbody>
       {% for session in details.sessions %}
         {% for url in session.urls %}
-      {% set data = url.decode().rsplit(":", 1) %}
+      {% set data = url.rsplit(":", 1) %}
         <tr>
           <td>{{data[0]}}</td>
           <td>
@@ -181,7 +176,7 @@ border: 1px solid #333;
           <a class="ui red label">Failed</a>
           {%endif%}
           </td>
-          <td><code>{{session}}</code></td>
+          <td><code>{{session.id}}</code></td>
         <td>
           <a href="/files/{{data[1]}}/results?filename={{data[0]}}">View</a>
         </td>
@@ -197,7 +192,7 @@ $(document).ready(function() {
 $('.player').each(function(index, element){
 const session = $(element).data('session');
 const log = $(element).data('log');
-AsciinemaPlayer.create("/static/tty/" + log + ".rec", document.getElementById('player-' + session + "-" + log));
+AsciinemaPlayer.create("https://f000.backblazeb2.com/file/whelks-artifacts/tty/" + log, document.getElementById('player-' + session + "-" + log));
 });
 $('.ui.accordion').accordion();
 $('.menu .item').tab();
