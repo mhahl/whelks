@@ -127,9 +127,11 @@ class SensorLogProcessor:
     def handle_login_success(self, event: Dict[str, Any]):
         """Handles cowrie.login.success events."""
         src_ip = event['src_ip']
+        self.update_ip_index(src_ip)
         self.update_last_seen(src_ip, event['timestamp'])
         self.update_credentials(src_ip, event['username'], event['password'])
         self.perform_nmap_scan(src_ip)
+
 
     def handle_command_input(self, event: Dict[str, Any]):
         """Handles cowrie.command.input events."""
@@ -183,6 +185,10 @@ class SensorLogProcessor:
 
     # --- Helper Methods for Handlers ---
 
+    def update_ip_index(self, src_ip: str):
+        """ Keep a index of IPs """
+        self.redis.sadd("index:ips", src_ip)
+
     def update_last_seen(self, src_ip: str, timestamp: str):
         """Updates the last_updated timestamp for an IP."""
         key = f"ip:{src_ip}:last_updated"
@@ -234,7 +240,7 @@ class SensorLogProcessor:
                 if handler:
                     handler(event)
                 else:
-                    logger.warning(f"No handler found for event: {event_id}")
+                    logger.debug(f"No handler found for event: {event_id}")
 
             except redis.exceptions.ConnectionError as e:
                 logger.error(f"Redis connection error: {e}. Retrying...")

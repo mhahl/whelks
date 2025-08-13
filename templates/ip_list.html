@@ -24,22 +24,22 @@
     </tr>
   </thead>
   <tbody>
-    {% for ip in ips %}
+    {% for summary in ip_summaries %}
     <tr>
       <td>
         <a href="/ip/{{ip}}"><strong>{{ip}}</strong></a>
       </td>
       <td>
-        {{get_last_updated_for_ip(ip)}}
+        {{summary.last_updated}}
       </td>
       <td>
-        {{get_session_count_for_ip(ip)}}
+        {{summary.session_count}}
       </td>
       <td>
-        {{get_urls_count_for_ip(ip)}}
+        {{summary.url_count}}
       </td>
       <td>
-        {{get_files_count_for_ip(ip)}}
+        {{summary.files_count}}
       </td>
       <td class="">
         <a href="/ip/{{ip}}" class="ui tiny basic button">View</a>

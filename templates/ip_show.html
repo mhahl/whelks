@@ -78,11 +78,11 @@ border: 1px solid #333;
   </div>
   {%endif%}
 
-  {% for session in sessions %}
+  {% for session in details %}
   <div class="ui fluid active accordion">
     <div class="title">
       <i class="dropdown icon"></i>
-  Session {{session}} 
+  Session {{session.id}}
     </div>
     <div class="content">
 
@@ -91,11 +91,10 @@ border: 1px solid #333;
           <h3>Commands</h3>
           <div class="ui inverted segment" style="height: 90%">
             <div class="ui list">
-              {% set commands = get_commands_for_session(ip, session) %}
-              {% if not commands %}
+              {% if not session.commands %}
               <p>No inputs.</p>
               {%endif%}
-              {% for command in commands %}
+              {% for command in session.commands %}
               <div class="item">
                 {{command.decode() | trim}}
               </div>
@@ -105,7 +104,7 @@ border: 1px solid #333;
         </div>
         <div class="eight wide column">
           <h3>Playback</h3>
-          <div id="player-{{session}}-{{get_log_for_ip_session(ip, session)}}" class="player" data-session="{{session}}" data-log="{{get_log_for_ip_session(ip, session)}}">
+          <div id="player-{{session.id}}-{{session.log_shasum}}" class="player" data-session="{{session.id}}" data-log="{{session.log_shasum}}">
           </div>
         </div>
       </div>
@@ -126,7 +125,7 @@ border: 1px solid #333;
       </tr>
     </thead>
     <tbody>
-      {% for file in get_files_for_ip(ip) %}
+      {% for file in details.files %}
       <tr>
         <td>
           <i class="file code outline icon"></i>
@@ -148,7 +147,7 @@ border: 1px solid #333;
       </tr>
     </thead>
     <tbody>
-      {% for credential in get_credentials_for_ip(ip) %}
+      {% for credential in details.credentials %}
       {% set data = credential.decode().split(":") %}
       <tr>
         <td>{{data[0]}}</td>
@@ -170,8 +169,8 @@ border: 1px solid #333;
       </tr>
     </thead>
     <tbody>
-      {% for session in sessions %}
-        {% for url in get_urls_for_ip_session(ip, session) %}
+      {% for session in details.sessions %}
+        {% for url in session.urls %}
       {% set data = url.decode().rsplit(":", 1) %}
         <tr>
           <td>{{data[0]}}</td>
