@@ -19,13 +19,10 @@ def download_file(url, save_path):
     """
     Download a file from a URL.
     """
-    try:
-        response = requests.get(url, stream=True) # Use stream=True for large files
-        response.raise_for_status() # Raise an exception for bad status codes (4xx or 5xx)
+    response = requests.get(url, stream=True) # Use stream=True for large files
+    response.raise_for_status() # Raise an exception for bad status codes (4xx or 5xx)
 
-        with open(save_path, 'wb') as file:
-            for chunk in response.iter_content(chunk_size=8192): # Iterate over content in chunks
-                file.write(chunk)
-        log.info(f"file saved for upload {url} -> {save_path}")
-    except requests.exceptions.RequestException as e:
-        log.info(f"error: {e}")
+    with open(save_path, 'wb') as file:
+        for chunk in response.iter_content(chunk_size=8192): # Iterate over content in chunks
+            file.write(chunk)
+    log.info(f"file saved for upload {url} -> {save_path}")

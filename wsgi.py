@@ -138,6 +138,7 @@ def create_app():
         """Displays the analysis results for a specific file hash."""
         filename = request.args.get('filename', 'N/A')
         report = db.get_file_report(shasum)
+        print(report)
         return render_template('file_show_results.html',
                                filename=filename,
                                report=report,

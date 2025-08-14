@@ -9,6 +9,8 @@ from typing import Optional, Tuple, Dict, Any
 
 import redis
 import vt
+import requests
+import time
 from vt.error import APIError
 
 from processing import utils
@@ -22,6 +24,7 @@ REDIS_USERNAME = os.getenv('REDIS_USERNAME', 'default')
 REDIS_PASSWORD = os.getenv('REDIS_PASSWORD')
 TEMP_PATH = os.getenv('TEMP_PATH', '/tmp')
 LOG_LEVEL = os.getenv('LOG_LEVEL', 'INFO').upper()
+S3_URL = os.getenv('S3_URL', 'https://f000.backblazeb2.com/file/whelks-artifacts/')
 
 # Configure logging once, using a standard format.
 logging.basicConfig(
@@ -107,10 +110,31 @@ class SensorLogProcessor:
             else:
                 logger.warning(f"Failed to download file from URL: {clean_url}")
                 return None, None
+        except requests.exceptions.RequestException as e:
+            logger.warning(f"Failed to download URL: {clean_url}, {e}")
+            return None, None
         finally:
             # Ensure temporary file is always removed
             if os.path.exists(local_path):
                 os.remove(local_path)
+
+    def scan_file(self, local_path: str) -> Tuple[Optional[str], Optional[str]]:
+        """
+        Uploads a file and scans it.
+
+        Args:
+            local_path: The local path to the file to scan.
+
+        Returns:
+            A tuple containing the file's SHA256 hash and the analysis result as a JSON string.
+        """
+        logger.info(f"Scanning file: {local_path}")
+
+        if os.path.exists(local_path):
+            return self.scan_file_content(local_path)
+        else:
+            logger.warning(f"Failed to scan file {local_path}")
+            return None, None
 
     def update_url_scan(self, url: str) -> Optional[str]:
         """Scans a URL and saves the results to Redis."""
@@ -123,6 +147,19 @@ class SensorLogProcessor:
         logger.info(f"Saving scan results for {shasum} ({url}) to key: {key}")
         self.redis.set(key, data)
         return shasum
+
+    def update_file_scan(self, path: str) -> Optional[str]:
+        """Scans a File and saves the results to Redis."""
+        shasum, data = self.scan_file(path)
+        if not shasum or not data:
+            logger.warning(f"Failed to get scan results for file: {path}")
+            return None
+
+        key = f"file:shasum:{shasum}"
+        logger.info(f"Saving scan results for {shasum} ({path}) to key: {key}")
+        self.redis.set(key, data)
+        return shasum
+
 
     def handle_login_success(self, event: Dict[str, Any]):
         """Handles cowrie.login.success events."""
@@ -163,11 +200,20 @@ class SensorLogProcessor:
 
     def handle_file_upload(self, event: Dict[str, Any]):
         """Handles cowrie.session.file_upload events."""
-        src_ip, shasum, filename = event['src_ip'], event['shasum'], event['file']
+        src_ip, shasum, filename = event['src_ip'], event['shasum'], event['filename']
         key = f"ip:{src_ip}:files"
         data = f"{shasum}:{filename}"
         logger.info(f"Recording uploaded file for {src_ip}: {data}")
-        self.redis.sadd(key, data)
+
+        retries = 0
+        while retries < 5:
+            logger.info(f"Scanning file from S3: {shasum} {filename} attempt {retries}/5")
+            clean_url = os.path.join(S3_URL, "downloads", shasum)
+            if self.update_url_scan(clean_url):
+                break
+            retries += 1
+            time.sleep(5)
+
 
     # --- Helper Methods for Handlers ---
 

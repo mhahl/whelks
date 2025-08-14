@@ -1,12 +1,19 @@
 {% extends 'base.html' %}
   {% block content %}
 
+<script>
+  $(document).ready(function(){
+    const resultTable = new DataTable("#resultTable",{
+      order: [[2, 'desc']]
+    });
+  });
+</script>
 
 <div class="main content">
 
   <!-- Breadcrumb Navigation -->
   <div class="ui breadcrumb">
-    <a class="section" href="/">IPs</a>
+    <a class="section" href="/">Downloads</a>
     <i class="right angle icon divider"></i>
     <a class="section" href="/files">{{shasum}}</a>
     <i class="right angle icon divider"></i>
@@ -27,7 +34,7 @@
       </div>
       <div class="ui red label detection-label">
         <i class="bug icon"></i>
-          {{report.attributes.stats.malicious}} Detections
+        {{report.attributes.stats.malicious}} Detections
       </div>
     </h2>
     <div class="ui list">
@@ -46,34 +53,32 @@
     </div>
   </div>
 
-<!-- Detections Table -->
-<h3 class="ui header">Antivirus Detections</h3>
-<table id="resultTable" class="ui celled table">
+  <!-- Detections Table -->
+  <h3 class="ui header">Antivirus Detections</h3>
+  <table id="resultTable" class="ui celled table">
     <thead>
-        <tr>
-            <th>Antivirus Vendor</th>
-            <th>Engine Version</th>
-            <th>Result</th>
-        </tr>
+      <tr>
+        <th>Antivirus Vendor</th>
+        <th>Engine Version</th>
+        <th>Result</th>
+      </tr>
     </thead>
     <tbody>
-        {%- for engine, results in report.attributes.results.items() -%}
-        {%- if results.result -%}
-        <tr>
-            <td>{{engine}}</td>
-            <td>{{results.engine_version}}</td>
-            <td>{{results.result}}</td>
-        </tr>
-        {%endif%}
-        {%endfor%}
+      {%- for engine, results in report.attributes.results.items() -%}
+      <tr>
+        <td>{{engine}}</td>
+        <td>{{results.engine_version}}</td>
+        <td>
+          {% if not results.result %}
+          <div class="ui small icon label green"><i class="check icon"></i> Clean</div>
+          {%else%}
+          <div class="ui small label icon red"><i class="bug icon"></i> {{results.result}}</div>
+          {%endif%}
+        </td>
+      </tr>
+      {%endfor%}
     </tbody>
-</table>
-
-<script>
-  $(document).ready(function(){
-    const resultTable = DataTable("#resultTable")
-  });
-</script>
-
+  </table>
+</div>
 {% endblock %}
 
